@@ -120,15 +120,18 @@ class OpenMediaTests(unittest.TestCase):
             media.write_bytes(b"legit")
             other = root / "other.m4a"
             other.write_bytes(b"different")
-            # Simulate the check/use gap: lstat on the media path returns
-            # the checked entry, then the file is replaced before the open
-            # completes — fstat must catch the inode change.
+            # Simulate the check/use gap: the check lstat returns the
+            # collected entry, then the file is replaced before the open
+            # completes — fstat must catch the inode change. The flag pins
+            # the swap to the check lstat, not resolve()'s internal ones.
             real_lstat = os.lstat
+            swapped = {"done": False}
 
             def swap_on_media_lstat(path):
                 result = real_lstat(path)
-                if Path(path) == media:
-                    other.rename(media)  # swap AFTER the check, before open
+                if Path(path) == media and not swapped["done"]:
+                    swapped["done"] = True
+                    other.rename(media)
                 return result
 
             with patch("mediascribe_cli.safeio.os.lstat", side_effect=swap_on_media_lstat):

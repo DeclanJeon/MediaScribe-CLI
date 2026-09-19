@@ -175,9 +175,13 @@ _MAX_STATE_JSON_BYTES = 64 * 1024 * 1024
 
 def _read_json(path: Path) -> dict[str, Any] | None:
     try:
-        if path.stat().st_size > _MAX_STATE_JSON_BYTES:
+        # Bound the read itself, not just the stat: a file that grows past
+        # the cap between stat() and read() must still be rejected.
+        with open(path, "rb") as handle:
+            raw = handle.read(_MAX_STATE_JSON_BYTES + 1)
+        if len(raw) > _MAX_STATE_JSON_BYTES:
             return None  # oversized state file → treat as corrupt
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(raw.decode("utf-8"))
     except (OSError, ValueError, RecursionError, MemoryError):
         # RecursionError/MemoryError: deeply nested JSON must degrade to
         # "corrupt" (quarantine/missing), never an uncaught traceback.

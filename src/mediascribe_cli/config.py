@@ -61,6 +61,8 @@ def _user_env_path() -> Path | None:
 
 def _warn_secret_file_permissions(path: Path, values: Mapping[str, str]) -> None:
     """Warn on stderr when a loaded env file holds secrets but is group/world-readable."""
+    if os.name == "nt":
+        return  # Windows st_mode synthesizes 0o666 — no real group/other bits
     if not any(key.endswith(_SECRET_KEY_MARKERS) for key in values):
         return
     try:

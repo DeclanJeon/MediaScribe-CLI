@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-205%20passing-brightgreen)](#개발-검증)
+[![Tests](https://img.shields.io/badge/tests-206%20passing-brightgreen)](#개발-검증)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS%20%7C%20windows-lightgrey)]()
 
 MediaScribe 데스크톱 UI와 별개로 실행되는 Python CLI입니다.

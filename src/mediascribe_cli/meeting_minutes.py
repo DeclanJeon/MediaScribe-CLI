@@ -316,7 +316,8 @@ def _request_with_retry(
                 return _request(candidate, prompt, environment, timeout), candidate
             except _RetryableProviderError as exc:
                 last_error = exc
-                sleep(1.0 * attempt)  # 1s, 2s — fixed, no jitter
+                if attempt < MAX_ATTEMPTS_PER_PROVIDER:
+                    sleep(1.0 * attempt)  # 1s — fixed, no jitter
             except ProviderError as exc:
                 last_error = exc
                 break  # non-retryable → next provider immediately
