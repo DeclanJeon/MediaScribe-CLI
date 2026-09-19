@@ -85,6 +85,7 @@ class LanguageOptionTests(unittest.TestCase):
                     self.assertEqual(model.calls[0]["options"]["task"], task)
 
 class OpenMediaTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_open_media_rejects_symlink_swap(self) -> None:
         # O_NOFOLLOW closes the check/use gap: a path swapped to a symlink
         # after collection fails the open instead of being read.
@@ -134,6 +135,7 @@ class OpenMediaTests(unittest.TestCase):
                 with self.assertRaises(UsageError):
                     _open_media(media)
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_open_media_allows_symlinked_ancestor(self) -> None:
         # Ancestor symlinks are legitimate (macOS /var → /private/var) —
         # the resolved canonical path is what gets opened.
@@ -166,6 +168,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             files = collect_media_files(root)
             self.assertEqual([path.name for path in files], ["A.m4a", "b.mp3"])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlinked_child_skipped_by_default(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -176,6 +180,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             files = collect_media_files(root)
             self.assertEqual([path.name for path in files], ["real.m4a", "target.mp3"])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlinked_input_rejected_by_default(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -185,6 +191,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             with self.assertRaises(UsageError):
                 collect_media_files(link)
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_follow_symlinks_accepts_in_tree_child(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -194,6 +202,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             files = collect_media_files(root, follow_symlinks=True)
             self.assertEqual(files, [target.resolve()])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_follow_symlinks_rejects_child_escaping_input_dir(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -205,6 +215,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             with self.assertRaises(UsageError):
                 collect_media_files(inside, follow_symlinks=True)
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_follow_symlinks_accepts_in_tree_input_dir(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -216,6 +228,8 @@ class CollectMediaFilesTests(unittest.TestCase):
             files = collect_media_files(alias, follow_symlinks=True)
             self.assertEqual(files, [media.resolve()])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_follow_symlinks_rejects_input_escaping_parent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

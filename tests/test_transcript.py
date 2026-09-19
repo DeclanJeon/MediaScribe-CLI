@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
@@ -118,6 +119,7 @@ class TranscriptTests(unittest.TestCase):
         body = render_full_body("evil [x](javascript:alert(1)).m4a", segments, "md")
         self.assertIn("\\[x\\]", body.splitlines()[0])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_read_transcript_source_rejects_symlink(self) -> None:
         from mediascribe_cli.errors import UsageError
         from mediascribe_cli.transcript import read_transcript_source

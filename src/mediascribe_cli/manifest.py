@@ -116,7 +116,7 @@ def _write_json_atomic(path: Path, payload: Mapping[str, Any]) -> None:
     _ensure_private_dir(path.parent)
     fd, temp = _exclusive_create(path.with_name(f"{path.name}.tmp-{os.getpid()}"))
     try:
-        os.fchmod(fd, 0o600)
+        _fchmod_private(fd)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             fd = -1
             json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
@@ -151,11 +151,18 @@ def _utc_now() -> str:
 
 
 def _fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        return  # directories can't be opened/fsync'd on Windows
     fd = os.open(path, os.O_RDONLY)
     try:
         os.fsync(fd)
     finally:
         os.close(fd)
+
+
+def _fchmod_private(fd: int) -> None:
+    if os.name != "nt":
+        os.fchmod(fd, 0o600)
 
 
 _MAX_STATE_JSON_BYTES = 64 * 1024 * 1024
@@ -176,6 +183,16 @@ def _read_json(path: Path) -> dict[str, Any] | None:
 def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
+    if os.name == "nt":
+        # os.kill(pid, 0) TERMINATES the process on Windows — never call it.
+        import ctypes
+
+        synchronize = 0x00100000
+        handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, pid)
+        if not handle:
+            return False
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return True
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -620,7 +637,7 @@ class Manifest:
                     continue
                 raise UsageError(f"다른 MediaScribe 실행이 출력 디렉터리를 사용 중입니다: {self._lock_path()}")
             try:
-                os.fchmod(fd, 0o600)
+                _fchmod_private(fd)
                 os.write(fd, str(os.getpid()).encode("ascii"))
                 os.fsync(fd)
             finally:

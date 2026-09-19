@@ -103,6 +103,17 @@ _MARKER_DIGEST_RE = re.compile(r"[0-9a-f]{64}")
 def _pid_alive(pid: int) -> bool:
     if pid <= 0:
         return False
+    if os.name == "nt":
+        # os.kill(pid, 0) TERMINATES the process on Windows — never call it.
+        # OpenProcess with SYNCHRONIZE succeeds only for a live pid.
+        import ctypes
+
+        synchronize = 0x00100000
+        handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, pid)
+        if not handle:
+            return False
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return True
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -115,11 +126,18 @@ def _pid_alive(pid: int) -> bool:
 
 
 def _fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        return  # directories can't be opened/fsync'd on Windows
     fd = os.open(path, os.O_RDONLY)
     try:
         os.fsync(fd)
     finally:
         os.close(fd)
+
+
+def _fchmod_private(fd: int) -> None:
+    if os.name != "nt":
+        os.fchmod(fd, 0o600)
 
 
 class ArtifactStager:
@@ -170,7 +188,7 @@ class ArtifactStager:
         if temp is None or fd < 0:
             raise UsageError(f"임시 파일을 만들 수 없습니다: {final}")
         try:
-            os.fchmod(fd, 0o600)
+            _fchmod_private(fd)
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 fd = -1
                 handle.write(content)
@@ -205,7 +223,7 @@ class ArtifactStager:
             except FileExistsError:
                 continue
             try:
-                os.fchmod(fd, 0o600)
+                _fchmod_private(fd)
                 with os.fdopen(fd, "w", encoding="utf-8") as handle:
                     fd = -1
                     handle.write(payload)

@@ -64,6 +64,7 @@ class PlanArtifactsTests(unittest.TestCase):
 
 
 class ArtifactStagerTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_commit_produces_exactly_three_finals(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -82,6 +83,7 @@ class ArtifactStagerTests(unittest.TestCase):
                 self.assertEqual(_mode(final), 0o600)
             self.assertEqual(list(out.glob("*.tmp-*")), [])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_stage_writes_private_temp_in_final_dir(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -178,6 +180,7 @@ class ArtifactStagerTests(unittest.TestCase):
             self.assertFalse(final.exists())
             self.assertEqual(list(out.glob("*.tmp-*")), [])
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlink_target_replaced_not_followed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -234,6 +237,7 @@ class CleanupStagingTests(unittest.TestCase):
             self.assertEqual(cleanup_staging(Path(directory) / "nope"), 0)
 
 class StagingTempSafetyTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_stage_never_follows_planted_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -269,6 +273,7 @@ class StagingTempSafetyTests(unittest.TestCase):
             self.assertEqual(leftover.read_text(encoding="utf-8"), "stale")
             stager.abort()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_created_output_dir_is_private(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "new-output"
@@ -277,6 +282,7 @@ class StagingTempSafetyTests(unittest.TestCase):
             self.assertEqual(_mode(out), 0o700)
             stager.abort()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_preexisting_output_dir_mode_untouched(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory) / "existing"

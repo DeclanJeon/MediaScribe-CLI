@@ -84,6 +84,7 @@ class FingerprintTests(unittest.TestCase):
 
 
 class ManifestLifecycleTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_open_creates_private_state_dir_and_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -250,6 +251,7 @@ class ManifestStateTests(unittest.TestCase):
             self.assertFalse(manifest.should_skip("meeting", fingerprint, ARTIFACT_KINDS))
             manifest.close()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_should_skip_false_when_output_is_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -286,6 +288,7 @@ class ManifestStateTests(unittest.TestCase):
                 manifest.set_state("k", "bogus")
             manifest.close()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_manifest_file_is_private(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             manifest = Manifest.open(Path(directory))
@@ -415,6 +418,7 @@ class CheckpointTests(unittest.TestCase):
                 )
             manifest.close()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlinked_checkpoints_dir_rejected_on_read(self) -> None:
         # A planted checkpoints symlink must fail reads too, not only writes.
         with tempfile.TemporaryDirectory() as directory:
@@ -506,6 +510,7 @@ class CheckpointTests(unittest.TestCase):
             finally:
                 third.close()
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_checkpoints_are_private(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -519,6 +524,7 @@ class CheckpointTests(unittest.TestCase):
                 self.assertEqual(_mode(path), 0o600)
 
 class StateDirSafetyTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlinked_state_dir_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)
@@ -537,6 +543,7 @@ class StateDirSafetyTests(unittest.TestCase):
             with self.assertRaises(UsageError):
                 Manifest.open(out)
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_symlinked_checkpoints_dir_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             out = Path(directory)

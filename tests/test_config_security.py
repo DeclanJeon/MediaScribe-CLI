@@ -104,6 +104,7 @@ class LoadEnvironmentTests(unittest.TestCase):
                 env = load_environment()
             self.assertEqual(env["OPENCODE_API_KEY"], "user-level")
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_permissive_secret_file_warns_on_stderr(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -117,6 +118,7 @@ class LoadEnvironmentTests(unittest.TestCase):
                 load_environment(str(env_file))
             self.assertIn("chmod", stderr.getvalue())
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_restrictive_secret_file_does_not_warn(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -130,6 +132,7 @@ class LoadEnvironmentTests(unittest.TestCase):
                 load_environment(str(env_file))
             self.assertEqual(stderr.getvalue(), "")
 
+    @unittest.skipIf(os.name == "nt", "POSIX symlink/mode semantics")
     def test_permissive_non_secret_file_does_not_warn(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
