@@ -46,7 +46,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             previous_cwd = os.getcwd()
             try:
                 os.chdir(root)
-                with _clean_env(HOME=str(home)):
+                with _clean_env(HOME=str(home), USERPROFILE=str(home)):
                     env = load_environment()
             finally:
                 os.chdir(previous_cwd)
@@ -59,7 +59,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             env_file.write_text("OPENROUTER_API_KEY=from-file\nMEDIASCRIBE_MODEL=large\n", encoding="utf-8")
             home = root / "home"
             home.mkdir()
-            with _clean_env(HOME=str(home)):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)):
                 env = load_environment(str(env_file))
             self.assertEqual(env["OPENROUTER_API_KEY"], "from-file")
             self.assertEqual(env["MEDIASCRIBE_MODEL"], "large")
@@ -71,7 +71,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             env_file.write_text("OPENCODE_API_KEY=via-var\n", encoding="utf-8")
             home = root / "home"
             home.mkdir()
-            with _clean_env(HOME=str(home), MEDIASCRIBE_ENV_FILE=str(env_file)):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home), MEDIASCRIBE_ENV_FILE=str(env_file)):
                 env = load_environment()
             self.assertEqual(env["OPENCODE_API_KEY"], "via-var")
 
@@ -79,7 +79,7 @@ class LoadEnvironmentTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory) / "home"
             home.mkdir()
-            with _clean_env(HOME=str(home)):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)):
                 with self.assertRaises(ConfigError):
                     load_environment(str(Path(directory) / "absent.env"))
 
@@ -90,7 +90,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             env_file.write_text("OPENROUTER_API_KEY=from-file\n", encoding="utf-8")
             home = root / "home"
             home.mkdir()
-            with _clean_env(HOME=str(home), OPENROUTER_API_KEY="from-process"):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home), OPENROUTER_API_KEY="from-process"):
                 env = load_environment(str(env_file))
             self.assertEqual(env["OPENROUTER_API_KEY"], "from-process")
 
@@ -100,7 +100,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             user_env = home / ".config" / "mediascribe" / "env"
             user_env.parent.mkdir(parents=True)
             user_env.write_text("OPENCODE_API_KEY=user-level\n", encoding="utf-8")
-            with _clean_env(HOME=str(home)):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)):
                 env = load_environment()
             self.assertEqual(env["OPENCODE_API_KEY"], "user-level")
 
@@ -114,7 +114,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             home = root / "home"
             home.mkdir()
             stderr = io.StringIO()
-            with _clean_env(HOME=str(home)), contextlib.redirect_stderr(stderr):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)), contextlib.redirect_stderr(stderr):
                 load_environment(str(env_file))
             self.assertIn("chmod", stderr.getvalue())
 
@@ -128,7 +128,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             home = root / "home"
             home.mkdir()
             stderr = io.StringIO()
-            with _clean_env(HOME=str(home)), contextlib.redirect_stderr(stderr):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)), contextlib.redirect_stderr(stderr):
                 load_environment(str(env_file))
             self.assertEqual(stderr.getvalue(), "")
 
@@ -142,7 +142,7 @@ class LoadEnvironmentTests(unittest.TestCase):
             home = root / "home"
             home.mkdir()
             stderr = io.StringIO()
-            with _clean_env(HOME=str(home)), contextlib.redirect_stderr(stderr):
+            with _clean_env(HOME=str(home), USERPROFILE=str(home)), contextlib.redirect_stderr(stderr):
                 load_environment(str(env_file))
             self.assertEqual(stderr.getvalue(), "")
 

@@ -194,9 +194,11 @@ class ArtifactStager:
             raise UsageError(f"임시 파일을 만들 수 없습니다: {final}")
         try:
             _fchmod_private(fd)
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            # Binary mode: text-mode writes translate \n → \r\n on Windows,
+            # which would corrupt the recorded sha256 digest of ``content``.
+            with os.fdopen(fd, "wb") as handle:
                 fd = -1
-                handle.write(content)
+                handle.write(content.encode("utf-8"))
                 handle.flush()
                 os.fsync(handle.fileno())
         finally:
