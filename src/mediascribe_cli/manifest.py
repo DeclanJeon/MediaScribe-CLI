@@ -448,24 +448,13 @@ class Manifest:
         if entry is None:
             return False
         if entry.get("state") != "committed" or entry.get("fingerprint") != fingerprint:
-            import sys as _s; print(f"DBG skip: state={entry.get('state')} fp_match={entry.get('fingerprint') == fingerprint}", file=_s.stderr)
             return False
         if summary_fingerprint is not None and entry.get("summary_fingerprint") != summary_fingerprint:
-            import sys as _s; print(f"DBG skip: summary_fp {entry.get('summary_fingerprint')!r} != {summary_fingerprint!r}", file=_s.stderr)
             return False
         outputs = entry.get("outputs")
         if not isinstance(outputs, dict) or set(outputs) != set(expected_kinds):
-            import sys as _s; print(f"DBG skip: outputs={outputs!r}", file=_s.stderr)
             return False
         if not self.recorded_outputs_intact(entry, expected_kinds):
-            import sys as _s
-            for kind, recorded in (outputs or {}).items():
-                p = Path(str(recorded))
-                try:
-                    r = p.resolve()
-                    print(f"DBG intact: {kind} file={p.is_file()} sym={p.is_symlink()} rel={r.is_relative_to(self._output_dir)} r={r} out={self._output_dir}", file=_s.stderr)
-                except OSError as e:
-                    print(f"DBG intact: {kind} resolve_err={e}", file=_s.stderr)
             return False
         if expected_outputs is not None:
             for kind, recorded in outputs.items():
