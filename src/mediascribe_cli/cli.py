@@ -230,7 +230,7 @@ def _run_minutes(args) -> int:
     title = args.title or source.stem
     emitter.emit("summary_started", file_name=source.name)
     emitter.emit("progress", stage="summary", file_name=source.name, progress=None, elapsed_seconds=0.0, eta_seconds=None, text="본문 요약 API 요청 중")
-    started_at = time.monotonic()
+    started_at = time.perf_counter()
     generated = generate_body_summary(
         transcript,
         title=title,
@@ -257,7 +257,7 @@ def _run_minutes(args) -> int:
         output=str(destination),
         provider=generated.provider,
         model=generated.model,
-        elapsed_seconds=time.monotonic() - started_at,
+        elapsed_seconds=time.perf_counter() - started_at,
     )
     return 0
 

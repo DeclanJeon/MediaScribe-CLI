@@ -210,13 +210,13 @@ def _transcribe_once(
     with _open_media(media_path) as audio:
         raw_segments, info = model.transcribe(audio, **options)
         duration = getattr(info, "duration", None) or getattr(info, "duration_after_vad", None)
-        started_at = time.monotonic()
+        started_at = time.perf_counter()
 
         def handle_segment(segment: dict[str, Any]) -> None:
             if on_segment:
                 on_segment(segment)
             if on_progress:
-                elapsed = time.monotonic() - started_at
+                elapsed = time.perf_counter() - started_at
                 progress = None
                 eta = None
                 if duration:
@@ -342,9 +342,9 @@ def transcribe_file(
     if config.diarize:
         emitter.emit("diarization_started", file_name=media_path.name, model=config.diarization_model)
         emitter.emit("progress", stage="diarization", file_name=media_path.name, progress=None, elapsed_seconds=0.0, eta_seconds=None, text="화자 분리 중")
-        diarization_started_at = time.monotonic()
+        diarization_started_at = time.perf_counter()
         turns = _diarize_file(media_path, config, environment)
-        diarization_elapsed = time.monotonic() - diarization_started_at
+        diarization_elapsed = time.perf_counter() - diarization_started_at
         emitter.emit("progress", stage="diarization", file_name=media_path.name, progress=None, elapsed_seconds=diarization_elapsed, eta_seconds=None, text="화자 분리 완료")
         emitter.emit("diarization_complete", file_name=media_path.name, speakers=len({turn["speaker"] for turn in turns}), elapsed_seconds=diarization_elapsed)
 

@@ -50,8 +50,13 @@ def _parse_env_file(content: str) -> dict[str, str]:
     return values
 
 
-def _user_env_path() -> Path:
-    return Path.home() / ".config" / "mediascribe" / "env"
+def _user_env_path() -> Path | None:
+    """``~/.config/mediascribe/env`` — ``None`` when the home directory is
+    undeterminable (Windows CI without USERPROFILE/HOME)."""
+    try:
+        return Path.home() / ".config" / "mediascribe" / "env"
+    except RuntimeError:
+        return None
 
 
 def _warn_secret_file_permissions(path: Path, values: Mapping[str, str]) -> None:
@@ -108,7 +113,7 @@ def load_environment(env_file: str | None = None) -> dict[str, str]:
         for key, value in _load_env_file(explicit_path, explicit=True).items():
             values.setdefault(key, value)
     user_path = _user_env_path()
-    if user_path.is_file():
+    if user_path is not None and user_path.is_file():
         for key, value in _load_env_file(user_path, explicit=False).items():
             values.setdefault(key, value)
     return values

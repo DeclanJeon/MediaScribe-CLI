@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from time import monotonic, sleep
+from time import perf_counter, sleep
 from typing import Any, Mapping, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -391,7 +391,7 @@ def _generate_chunked(
     )
     namespace = hashlib.sha256(namespace_material.encode("utf-8")).hexdigest()[:16]
 
-    started_at = monotonic()
+    started_at = perf_counter()
 
     def call(prompt: str) -> tuple[str, Any]:
         return _request_with_retry(candidates, prompt, env, timeout, emitter)
@@ -414,7 +414,7 @@ def _generate_chunked(
                 "progress",
                 stage="summary",
                 progress=100.0,
-                elapsed_seconds=monotonic() - started_at,
+                elapsed_seconds=perf_counter() - started_at,
                 text="본문 요약 완료",
             )
         return finish(text, candidate)
@@ -430,7 +430,7 @@ def _generate_chunked(
                     "progress",
                     stage="summary",
                     progress=index / total * 100.0,
-                    elapsed_seconds=monotonic() - started_at,
+                    elapsed_seconds=perf_counter() - started_at,
                     text=f"구간 {index + 1}/{total} 요약 중",
                 )
             text, _candidate = call(
@@ -446,7 +446,7 @@ def _generate_chunked(
             "progress",
             stage="summary",
             progress=100.0,
-            elapsed_seconds=monotonic() - started_at,
+            elapsed_seconds=perf_counter() - started_at,
             text="본문 요약 완료",
         )
     return finish(text, candidate)

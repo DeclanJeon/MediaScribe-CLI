@@ -150,6 +150,11 @@ def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def _utc_stamp() -> str:
+    """Filename-safe UTC stamp — ``:`` is illegal in Windows filenames."""
+    return _utc_now().replace(":", "-")
+
+
 def _fsync_directory(path: Path) -> None:
     if os.name == "nt":
         return  # directories can't be opened/fsync'd on Windows
@@ -185,14 +190,20 @@ def _pid_alive(pid: int) -> bool:
         return False
     if os.name == "nt":
         # os.kill(pid, 0) TERMINATES the process on Windows — never call it.
+        # OpenProcess alone is insufficient: a dead process object survives
+        # while any handle stays open (e.g. Popen._handle), so probe the
+        # signaled state — WAIT_OBJECT_0 means terminated.
         import ctypes
 
-        synchronize = 0x00100000
-        handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, pid)
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
         if not handle:
             return False
-        ctypes.windll.kernel32.CloseHandle(handle)
-        return True
+        try:
+            result = kernel32.WaitForSingleObject(handle, 0)
+        finally:
+            kernel32.CloseHandle(handle)
+        return result != 0  # WAIT_OBJECT_0=0 → dead; TIMEOUT/FAILED → alive
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -316,7 +327,7 @@ class Manifest:
             payload = None  # unknown schema → quarantine like corrupt JSON
         if payload is None:
             if manifest_path.exists() and not read_only and persistent:
-                corrupt = manifest_path.with_name(f"{_MANIFEST_NAME}.corrupt-{_utc_now()}")
+                corrupt = manifest_path.with_name(f"{_MANIFEST_NAME}.corrupt-{_utc_stamp()}")
                 try:
                     manifest_path.rename(corrupt)
                 except OSError:
@@ -437,13 +448,24 @@ class Manifest:
         if entry is None:
             return False
         if entry.get("state") != "committed" or entry.get("fingerprint") != fingerprint:
+            import sys as _s; print(f"DBG skip: state={entry.get('state')} fp_match={entry.get('fingerprint') == fingerprint}", file=_s.stderr)
             return False
         if summary_fingerprint is not None and entry.get("summary_fingerprint") != summary_fingerprint:
+            import sys as _s; print(f"DBG skip: summary_fp {entry.get('summary_fingerprint')!r} != {summary_fingerprint!r}", file=_s.stderr)
             return False
         outputs = entry.get("outputs")
         if not isinstance(outputs, dict) or set(outputs) != set(expected_kinds):
+            import sys as _s; print(f"DBG skip: outputs={outputs!r}", file=_s.stderr)
             return False
         if not self.recorded_outputs_intact(entry, expected_kinds):
+            import sys as _s
+            for kind, recorded in (outputs or {}).items():
+                p = Path(str(recorded))
+                try:
+                    r = p.resolve()
+                    print(f"DBG intact: {kind} file={p.is_file()} sym={p.is_symlink()} rel={r.is_relative_to(self._output_dir)} r={r} out={self._output_dir}", file=_s.stderr)
+                except OSError as e:
+                    print(f"DBG intact: {kind} resolve_err={e}", file=_s.stderr)
             return False
         if expected_outputs is not None:
             for kind, recorded in outputs.items():

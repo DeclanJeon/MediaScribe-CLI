@@ -105,15 +105,20 @@ def _pid_alive(pid: int) -> bool:
         return False
     if os.name == "nt":
         # os.kill(pid, 0) TERMINATES the process on Windows — never call it.
-        # OpenProcess with SYNCHRONIZE succeeds only for a live pid.
+        # OpenProcess alone is insufficient: a dead process object survives
+        # while any handle stays open (e.g. Popen._handle), so probe the
+        # signaled state — WAIT_OBJECT_0 means terminated.
         import ctypes
 
-        synchronize = 0x00100000
-        handle = ctypes.windll.kernel32.OpenProcess(synchronize, False, pid)
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE
         if not handle:
             return False
-        ctypes.windll.kernel32.CloseHandle(handle)
-        return True
+        try:
+            result = kernel32.WaitForSingleObject(handle, 0)
+        finally:
+            kernel32.CloseHandle(handle)
+        return result != 0  # WAIT_OBJECT_0=0 → dead; TIMEOUT/FAILED → alive
     try:
         os.kill(pid, 0)
     except ProcessLookupError:

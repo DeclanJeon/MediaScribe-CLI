@@ -94,7 +94,7 @@ def ensure_model(ctx: PipelineContext) -> Any:
         eta_seconds=None,
         text=f"모델 로딩 중: {config.model}",
     )
-    started_at = time.monotonic()
+    started_at = time.perf_counter()
     from faster_whisper import WhisperModel
 
     ctx.model = WhisperModel(
@@ -106,7 +106,7 @@ def ensure_model(ctx: PipelineContext) -> Any:
         "progress",
         stage="model",
         progress=None,
-        elapsed_seconds=time.monotonic() - started_at,
+        elapsed_seconds=time.perf_counter() - started_at,
         eta_seconds=None,
         text="모델 로딩 완료",
     )
@@ -356,7 +356,7 @@ def process_file(media_path: Path, key: str, ctx: PipelineContext) -> dict[str, 
             eta_seconds=None,
             text="본문 요약 API 요청 중",
         )
-        summary_started_at = time.monotonic()
+        summary_started_at = time.perf_counter()
         try:
             generated = generate_body_summary(
                 "\n".join(transcript_lines(result.get("segments") or [])),
@@ -379,7 +379,7 @@ def process_file(media_path: Path, key: str, ctx: PipelineContext) -> dict[str, 
             output=str(targets["body_summary"].path),
             provider=generated.provider,
             model=generated.model,
-            elapsed_seconds=time.monotonic() - summary_started_at,
+            elapsed_seconds=time.perf_counter() - summary_started_at,
         )
 
         # -- Stage all three rendered artifacts, then commit atomically ----
