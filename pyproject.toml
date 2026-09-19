@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mediascribe-cli"
+version = "0.1.0"
+description = "Standalone CLI for MediaScribe transcription, diarization, and meeting minutes"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "MediaScribe" }]
+dependencies = [
+  "faster-whisper>=1.1.0",
+]
+
+[project.optional-dependencies]
+diarization = [
+  "pyannote.audio>=3.3.0",
+]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+mediascribe = "mediascribe_cli.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
