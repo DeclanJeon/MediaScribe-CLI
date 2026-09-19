@@ -108,24 +108,47 @@ class OpenMediaTests(unittest.TestCase):
                 self.assertEqual(audio.read(), b"fake-media")
                 self.assertEqual(audio.name, str(media))
 
-    def test_open_media_rejects_ancestor_symlink(self) -> None:
-        # An ancestor directory swapped for a symlink must also fail the
-        # open — O_NOFOLLOW on the final component alone is not enough.
+    def test_open_media_rejects_file_swap(self) -> None:
+        # A different real file swapped in after collection fails the inode
+        # identity check — the decoder never reads the wrong media.
         from mediascribe_cli.transcriber import _open_media
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            outside = root / "outside"
-            outside.mkdir()
-            secret = outside / "media.m4a"
-            secret.write_bytes(b"secret")
-            real_dir = root / "inputs"
+            media = root / "media.m4a"
+            media.write_bytes(b"legit")
+            other = root / "other.m4a"
+            other.write_bytes(b"different")
+            # Simulate the check/use gap: lstat on the media path returns
+            # the checked entry, then the file is replaced before the open
+            # completes — fstat must catch the inode change.
+            real_lstat = os.lstat
+
+            def swap_on_media_lstat(path):
+                result = real_lstat(path)
+                if Path(path) == media:
+                    other.rename(media)  # swap AFTER the check, before open
+                return result
+
+            with patch("mediascribe_cli.safeio.os.lstat", side_effect=swap_on_media_lstat):
+                with self.assertRaises(UsageError):
+                    _open_media(media)
+
+    def test_open_media_allows_symlinked_ancestor(self) -> None:
+        # Ancestor symlinks are legitimate (macOS /var → /private/var) —
+        # the resolved canonical path is what gets opened.
+        from mediascribe_cli.transcriber import _open_media
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            real_dir = root / "real"
             real_dir.mkdir()
-            (real_dir / "media.m4a").write_bytes(b"legit")
-            real_dir.rename(root / "inputs-real")
-            (root / "inputs").symlink_to(outside, target_is_directory=True)
-            with self.assertRaises(UsageError):
-                _open_media(root / "inputs" / "media.m4a")
+            media = real_dir / "media.m4a"
+            media.write_bytes(b"legit")
+            link_dir = root / "linked"
+            link_dir.symlink_to(real_dir, target_is_directory=True)
+            with _open_media(link_dir / "media.m4a") as audio:
+                self.assertEqual(audio.read(), b"legit")
 
 
 class CollectMediaFilesTests(unittest.TestCase):

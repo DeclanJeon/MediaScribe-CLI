@@ -245,7 +245,7 @@ OpenRouter가 키 없이 비활성화되었거나 요청이 실패하면 OpenCod
 - 작업 디렉터리 `.env*`는 신뢰하지 않는다.
 - 사람용 로그는 제어 문자·ANSI·비밀 패턴을 제거하고, 오류 메시지에서 API 키를 마스킹한다.
 - 산출물·메타데이터는 0600/0700 권한으로 기록된다.
-- 심볼릭 링크 입력은 기본 거부, `--follow-symlinks`도 입력 디렉터리 내부로 제한한다. 미디어와 `minutes` 전사 입력은 `safeio.open_no_symlinks`로 연다 — 경로의 모든 구성 요소를 `O_NOFOLLOW`로 열어 수집-사용 간 symlink 교체(마지막 구성 요소와 상위 디렉터리 모두)를 차단한다. rename 교체(실제 디렉터리를 다른 실제 디렉터리로)는 `openat2` 없이 막을 수 없어 수용된 잔여 gap이다. 환경 파일·용어 사전·화자 매핑·상태 JSON은 크기 상한이 있다.
+- 심볼릭 링크 입력은 기본 거부, `--follow-symlinks`도 입력 디렉터리 내부로 제한한다. 미디어와 `minutes` 전사 입력은 `safeio.open_verified`로 연다 — `lstat`이 마지막 구성 요소의 심볼릭 링크를 거부하고, resolve된 경로의 모든 구성 요소를 `O_NOFOLLOW`로 열어 resolve 이후의 symlink 교체를 차단하며, `fstat`의 device+inode가 검사 시점의 것과 일치해야 한다(symlink·rename 교체 모두 차단). 상위 디렉터리의 심볼릭 링크 자체는 허용된다(macOS `/var` → `/private/var` 같은 정상 경로). resolve 이전의 상위 디렉터리 교체는 `openat2`/fd-pinning 없이 막을 수 없어 수용된 잔여 gap이며, `media_path` 바인딩이 변경된 해석을 다른 입력으로 취급한다. `dir_fd` 미지원 플랫폼(Windows)은 resolve된 경로의 단일 `O_NOFOLLOW` open으로 fallback한다. 환경 파일·용어 사전·화자 매핑·상태 JSON은 크기 상한이 있다.
 
 ## 12. 검증 전략
 

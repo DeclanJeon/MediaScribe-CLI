@@ -10,7 +10,7 @@ from typing import Any, Mapping, Sequence
 from .artifacts import ARTIFACT_EXTENSIONS, DEFAULT_ARTIFACT_FORMAT
 from .chunking import MAX_TRANSCRIPT_BYTES
 from .errors import UsageError
-from .safeio import open_no_symlinks
+from .safeio import open_verified
 
 
 def normalize_artifact_format(value: str | None) -> str:
@@ -367,7 +367,7 @@ def read_transcript_source(path: str | Path) -> str:
     # Open by descriptor, not pathname: a symlink swapped into any path
     # component after the check above fails the open instead of being read.
     try:
-        fd = open_no_symlinks(raw)
+        fd = open_verified(raw)
     except OSError as exc:
         raise UsageError(f"전사 파일을 읽을 수 없습니다: {raw}") from exc
     try:

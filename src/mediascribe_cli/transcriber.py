@@ -9,7 +9,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from .config import RuntimeConfig
 from .errors import DependencyError, UsageError
-from .safeio import open_no_symlinks
+from .safeio import open_verified
 from .transcript import (
     load_glossary,
     load_speaker_map,
@@ -172,18 +172,19 @@ class _NamedAudio(io.RawIOBase):
 
 
 def _open_media(media_path: Path):
-    """Open ``media_path`` without following any symlink component.
+    """Open ``media_path`` proving the opened file is the collected file.
 
     ``collect_media_files`` validates the directory entry once; the decoder
-    must not re-trust the pathname afterward. ``safeio.open_no_symlinks``
-    closes the check/use gap for the final component *and* every ancestor
-    directory: a symlink swapped in anywhere along the path fails the open
-    instead of being read. The returned binary file object is what
-    faster-whisper and pyannote consume — the path is never reopened by
-    name.
+    must not re-trust the pathname afterward. ``safeio.open_verified``
+    rejects a final-component symlink, walks the resolved path with
+    ``O_NOFOLLOW`` per component, and requires the opened file's
+    device+inode to match the checked entry — a swap to a symlink or a
+    different file between check and open fails instead of being read.
+    The returned binary file object is what faster-whisper and pyannote
+    consume — the path is never reopened by name.
     """
     try:
-        fd = open_no_symlinks(media_path)
+        fd = open_verified(media_path)
     except OSError as exc:
         raise UsageError(f"미디어 파일을 안전하게 열 수 없습니다(심볼릭 링크이거나 접근 불가): {media_path}") from exc
     return _NamedAudio(os.fdopen(fd, "rb"), str(media_path))
